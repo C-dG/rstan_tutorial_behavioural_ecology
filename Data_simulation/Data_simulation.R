@@ -99,7 +99,7 @@ betaw_partner_c=-1.1
 
 
 # study design ----
-  Population <- rep(1:n.ind, ind_rep)
+  IDi <- rep(1:n.ind, ind_rep)
   IDj <- rep(1:n.ind, ind_rep)+1
   IDj <- ifelse(IDj > n.ind, IDj-n.ind, IDj)
   df <- data.frame(IDi,IDj)
@@ -169,3 +169,4 @@ levels(data$Population)<- c("Bagley Wood", "Boshoek", "Donana", "Forstenrieder p
 data$Individual <- as.factor(data$Individual)
 data$Individual <- paste0("C3F7", sprintf("%03d", data$Individual))
 data$Partner <-paste0("C3F7", sprintf("%03d", data$Partner))
+
