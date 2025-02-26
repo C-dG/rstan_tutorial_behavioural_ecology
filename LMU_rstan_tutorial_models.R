@@ -1,7 +1,7 @@
 # Rstan tutorial models
 
 # Load the necessary packages
-library(rstan);library(shinystan);library(dplyr)
+library(rstan);library(shinystan)
 
 # Set working directory (sets it where the script is located)
 script.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
@@ -11,20 +11,12 @@ setwd(script.dir)
 df <- read.csv("fake_SPI_birds.csv")
 
 # Take a quick look at the structure of the data frame
-str(df)
 head(df)
 
 # stan does not work with character classes, therefore transform all characters to integers 
 # Use "//" to annotate text within rstan files insetad of "#"
 # Denote the end of a line with ";"
 
-# Change characters to indices
-df <- df %>% mutate(Individual = Individual %>% as.factor() %>% as.numeric())
-df <- df %>% mutate(Partner = Partner %>% as.factor() %>% as.numeric())
-df <- df %>% mutate(Population = Population %>% as.factor() %>% as.numeric())
-df$Sex <- ifelse(df$Sex == "F", 0, 1) 
-
-head(df)
 
 # Stan models have the following chunks
 # However, not all are necessary for each model
@@ -40,13 +32,14 @@ write(
 
 # Model 1 Linear regression 
 #===============================================================================
-# Model 1.1: Simple regression model
+# Model 1.1: 
+# Simple regression model
 #===============================================================================
 
 # Prepare the data for the stan model
 stan_data_mod1.1 <- list(N_z = nrow(df),
-                        z = as.vector(scale(df$Exploration)),
-                       x = as.vector(scale(df$Density)))
+                         z = as.vector(scale(df$Exploration)),
+                         x = as.vector(scale(df$Density)))
 
 # Take a look at the imported data structure
 View(stan_data_mod1.1)
@@ -103,7 +96,7 @@ round(rstan::summary(fit_mod1.1, pars = c("B_0", "B_1", "sigma_e"))$summary[,c(1
 stan_data_mod1.2 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          x = as.vector(scale(df$Density)),
-                         sex = df$Sex)
+                         sex = ifelse(df$Sex == "F", -0.5, 0.5))
 
 # Write the stan model
 write(
@@ -149,14 +142,15 @@ fit_mod1.2 <- stan("Mod1.2.stan", data = stan_data_mod1.2,
 round(rstan::summary(fit_mod1.2, pars = c("B_0", "B_1", "B_sex", "sigma_e"))$summary[,c(1,4,6,8,9,10)],3)
 
 #===============================================================================
-# Model 1.3 - Add an interaction effect
+# Model 1.3 
+# Add an interaction effect
 #===============================================================================
 
 # Prepare the data for the stan model
 stan_data_mod1.3 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          x = as.vector(scale(df$Density)),
-                         sex = df$Sex)
+                         sex = ifelse(df$Sex == "F", -0.5, 0.5))
 
 # used different notation to show alternative option for multiple betas
 
@@ -206,6 +200,7 @@ round(rstan::summary(fit_mod1.3, pars = c("B_0", "B", "B_int", "sigma_e"))$summa
 # Model 2 Generalised linear regression 
 #===============================================================================
 # Model 2.1: 
+# Add a random intercept
 #===============================================================================
 
 # Prepare the data for the stan model
@@ -213,7 +208,7 @@ stan_data_mod2.1 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          x = as.vector(scale(df$Density)),
                          N_I = length(unique(df$Individual)),
-                         ID = df$Individual)
+                         ID = as.integer(as.factor(df$Individual)))
 
 # Write the stan model
 write(
@@ -272,6 +267,7 @@ round(rstan::summary(fit_mod2.1, pars = pars_mod2.1)$summary[,c(1,4,6,8,9,10)],3
 
 #===============================================================================
 # Model 2.2
+# Add a random slope 
 #===============================================================================
 
 # Prepare the data for the stan model
@@ -279,7 +275,7 @@ stan_data_mod2.2 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          x = as.vector(scale(df$Density)),
                          N_I = length(unique(df$Individual)),
-                         ID = df$Individual)
+                         ID = as.integer(df$Individual))
 
 # Write the stan model
 write(
@@ -347,6 +343,7 @@ round(rstan::summary(fit_mod2.2, pars = pars_mod2.2)$summary[,c(1,4,6,8,9,10)],3
 
 #===============================================================================
 # Model 2.3
+# Assignment 2: Add a random intercept & slope for population
 #===============================================================================
 
 # Prepare the data for the stan model
@@ -354,9 +351,9 @@ stan_data_mod2.3 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          x = as.vector(scale(df$Density)),
                          N_I = length(unique(df$Individual)),
-                         ID = df$Individual,
+                         ID = as.integer(as.factor(df$Individual)),
                          N_pop = length(unique(df$Population)),
-                         pop = df$Population)
+                         pop = as.integer(as.factor(df$Population)))
 
 # Write the stan model
 write(
@@ -443,6 +440,7 @@ round(rstan::summary(fit_mod2.3, pars = pars_mod2.2)$summary[,c(1,4,6,8,9,10)],3
 # Model 3 Mulivariate linear mixed model 
 #===============================================================================
 # Model 3.1: 
+# Extend model 2.1 to a multivariate model
 #===============================================================================
 
 # Prepare the data for the stan model
@@ -451,7 +449,7 @@ stan_data_mod3.1 <- list(N_z = nrow(df),
                                               as.vector(scale(df$Aggression)))),
                          x = as.vector(scale(df$Density)),
                          N_I = length(unique(df$Individual)),
-                         ID = df$Individual)
+                         ID = as.integer(as.factor(df$Individual)))
 
 # Write the stan model
 write(
@@ -530,6 +528,7 @@ round(rstan::summary(fit_mod3.1, pars = pars_mod3.1)$summary[,c(1,4,6,8,9,10)],3
 
 #===============================================================================
 # Model 3.2
+# Assignment 3: Add random slopes for individuals and correlate them across traits
 #===============================================================================
 
 # Prepare the data for the stan model
@@ -538,7 +537,7 @@ stan_data_mod3.2 <- list(N_z = nrow(df),
                                               as.vector(scale(df$Aggression)))),
                          x = as.vector(scale(df$Density)),
                          N_I = length(unique(df$Individual)),
-                         ID = df$Individual)
+                         ID = as.integer(as.factor(df$Individual)))
 
 # Write the stan model
 write(
@@ -619,17 +618,18 @@ round(rstan::summary(fit_mod3.2, pars = pars_mod3.2)$summary[,c(1,4,6,8,9,10)],3
 
 # Model 4 Error-in-variable (EIV) & selection gradient analysis 
 #===============================================================================
-# Model 4.1: z ~ B_0 + B1 * x
+# Model 4.1: 
+# Add an EIV selection gradient to model 2.1 
 #===============================================================================
 
 # Prepare the data for the stan model
 stan_data_mod4.1 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          N_I = length(unique(df$Individual)),
-                         ID = df$Individual,
+                         ID = as.integer(as.factor(df$Individual)),
                          w = as.vector(scale(unique(df$LRS))),
                          N_w = length(unique(df$LRS)),
-                         ID_w = unique(df$Individual))
+                         ID_w = unique(as.integer(as.factor(df$Individual))))
 
 # Write the stan model
 write(
@@ -700,14 +700,15 @@ round(rstan::summary(fit_mod4.1, pars = pars_mod4.1)$summary[,c(1,4,6,8,9,10)],3
 
 #===============================================================================
 # Model 4.2
+# Change model 4.1 for repeated fitness measure and add social selection gradient (partner phenotype effect)
 #===============================================================================
 
 # Prepare the data for the stan model
 stan_data_mod4.2 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          N_I = length(unique(df$Individual)),
-                         ID = df$Individual,
-                         partnerID = df$Partner, 
+                         ID = as.integer(as.factor(df$Individual)),
+                         partnerID = as.integer(as.factor(df$Partner)), 
                          w = as.vector(scale(df$Feeding_rate)))
 
 # Write the stan model
@@ -775,7 +776,7 @@ write(
 
 # Fit the model
 fit_mod4.2 <- stan("Mod4.2.stan", data = stan_data_mod4.2, 
-                   chains = 4, iter = 3000,  
+                   chains = 4, iter = 4000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
                    refresh = 250,
@@ -790,6 +791,7 @@ round(rstan::summary(fit_mod4.2, pars = pars_mod4.2)$summary[,c(1,4,6,8,9,10)],3
 
 #===============================================================================
 # Model 4.3
+# Assignment 4: Add random slopes to model 4.1 and setup up direct, quadratic and correlation selection gradients for individual intercepts and slopes 
 #===============================================================================
 
 # Prepare the data for the stan model
@@ -797,10 +799,10 @@ stan_data_mod4.3 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          x = as.vector(scale(df$Density)),
                          N_I = length(unique(df$Individual)),
-                         ID = df$Individual,
+                         ID = as.integer(as.factor(df$Individual)),
                          w = as.vector(scale(unique(df$LRS))),
                          N_w = length(unique(df$LRS)),
-                         ID_w = unique(df$Individual))
+                         ID_w = unique(as.integer(as.factor(df$Individual))))
 
 # Write the stan model
 write(
@@ -883,11 +885,66 @@ pars_mod4.3 <- c("B_0", "Bw_0", "Bw",
 round(rstan::summary(fit_mod4.3, pars = pars_mod4.3)$summary[,c(1,4,6,8,9,10)],3)
 
 #===============================================================================
-# Bonus: working with shiny stan & posterior distribution 
+# Bonus (assignments): working with shiny stan & posterior distribution 
 #===============================================================================
 
+# Bonus assignment 1
+# Do some posterior checks with any of the models
 launch_shinystan(fit_mod4.3)
 
-# Still have to do this
+# Bonus assignment 2
+# Extract the posterior for further calculations
+library(tidyverse)
 
+# Extract posteriors
+posterior_mod2.3 <- as.data.frame(rstan::extract(fit_mod2.3, pars = c("B_0", "B_1", 
+                                                                      "var_ID_int", "var_ID_slopes",
+                                                                      "var_pop_int", "var_pop_slopes",
+                                                                      "var_res", "var_P")))
 
+# Back transform variables
+posterior_mod2.3$B_0 <- (posterior_mod2.3$B_0*sd(df$Exploration)) + mean(df$Exploration)
+posterior_mod2.3$B_1 <- posterior_mod2.3$B_1*(sd(df$Exploration)/sd(df$Density))
+
+posterior_mod2.3 <- posterior_mod2.3 %>%
+  mutate(across(contains("var_"), ~ . * var(df$Exploration)))
+
+# Derive repeatabilities 
+posterior_mod2.3 <- posterior_mod2.3 %>%
+  mutate(across(contains("var_"), 
+                ~ . /var_P, 
+                .names = "Rep_{.col}"))
+
+# Derive quantiles of posterior per variable 
+Sum_mod2.3 <- as.data.frame(t(round(apply(posterior_mod2.3[1:ncol(posterior_mod2.3)],2, quantile,probs = c(0.025, 0.5, 0.975)),3)))
+Sum_mod2.3 <- Sum_mod2.3 %>% unite(`2.5%`, `97.5%`, col = "Credible interval", sep = " ; ", remove = F)
+Sum_mod2.3 <- Sum_mod2.3 %>% mutate(`Credible interval`= paste0("(",`Credible interval`, ")"))
+Sum_mod2.3 <- Sum_mod2.3 %>% unite(`50%`, `Credible interval`, col = "Estimate", sep = " ", remove = F)
+Sum_mod2.3 <- Sum_mod2.3 %>% relocate("Estimate")
+
+# Make a figure with the BLUPS of a model
+library(ggplot2)
+
+BLUPS_I <- as.data.frame(round(summary(fit_mod4.2, pars = "I")$summary[,c(1,4,6, 8, 9,10)],3))
+BLUPS_WI <- as.data.frame(round(summary(fit_mod4.2, pars = "WI")$summary[,c(1,4,6, 8, 9,10)],3))
+W_slope <- as.data.frame(round(summary(fit_mod4.2, pars = "Bw")$summary[,c(1,4,6, 8, 9,10)],3))
+
+ggplot() +
+  geom_point(aes(x = (BLUPS_I$"50%"), 
+                 y = (BLUPS_WI$"50%")), alpha = 0.5) +
+  geom_abline(intercept = 0, slope = W_slope[1,"50%"], linewidth = 1.25, color = "red") +
+  geom_errorbar(aes(
+    x = (BLUPS_I$"50%"),
+    ymin = (BLUPS_WI$"2.5%"),
+    ymax = (BLUPS_WI$"97.5%")), alpha = 0.1) +
+  geom_errorbarh(aes(
+    y = (BLUPS_WI$"50%"),
+    xmin = (BLUPS_I$"2.5%"),
+    xmax = (BLUPS_I$"97.5%")), alpha = 0.1) + 
+  labs(y = "Fitness (w)", x = "Average explorarion behaviour") +
+  scale_x_continuous(limits = c(-1.6,1.6), breaks = seq(-1.5,1.5,0.5)) +
+  scale_y_continuous(limits = c(-3.2,3.2), breaks = seq(-3,3,1)) +
+  theme_classic(base_size = 17) + 
+  theme(legend.position = "none", 
+        axis.text.x = element_text(color = "black"),
+        axis.text.y = element_text(color = "black"))
