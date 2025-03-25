@@ -276,7 +276,7 @@ stan_data_mod2.2 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          x = as.vector(scale(df$Density)),
                          N_I = length(unique(df$Individual)),
-                         ID = as.integer(df$Individual))
+                         ID = as.integer(as.factor(df$Individual)))
 
 # Write the stan model
 write(
@@ -334,9 +334,8 @@ write(
   real<lower=0> var_P = var_ID_int + var_ID_slopes + var_res;
   
   // Correlations & Covariances
-  matrix[2,2] Omega_I = L * L';             // Correlation matrix
-  matrix[2,2] D_I = diag_matrix(sigma_I);   // Diagonal SD matrix
-  matrix[2,2] S_I = D_I*Omega_I*D_I;        // Covariance matrix
+  matrix[2,2] rho_I = L * L';             // Correlation matrix
+  matrix[2,2] cov_I = diag_matrix(sigma_I)*rho_I*diag_matrix(sigma_I); // Covariance matrix
   }"
   , file = "Mod2.2.stan") 
 
@@ -351,7 +350,7 @@ fit_mod2.2 <- stan("Mod2.2.stan", data = stan_data_mod2.2,
 
 pars_mod2.2 <- c("B_0", "B_1", 
                  "var_ID_int", "var_ID_slopes", "var_res", "var_P",
-                 "Omega_I", "S_I")
+                 "rho_I", "cov_I")
 
 # Look at the summary estimates
 round(rstan::summary(fit_mod2.2, pars = pars_mod2.2)$summary[,c(1,4,6,8,9,10)],3)
@@ -444,10 +443,9 @@ write(
   real<lower=0> var_P2 = var_ID_int2 + var_res2;
   
   // Correlations & Covariances
-  matrix[2,2] Omega_I = L * L'; 
-  matrix[2,2] D_I = diag_matrix(sigma_I); 
-  matrix[2,2] S_I = D_I*Omega_I*D_I; 
-  matrix[2,2] Omega_R = LR * LR';   // Residual correlation matrix
+  matrix[2,2] rho_I = L * L';
+  matrix[2,2] cov_I = diag_matrix(sigma_I)*rho_I*diag_matrix(sigma_I); 
+  matrix[2,2] rho_R = LR * LR';   // Residual correlation matrix
   }"
   , file = "Models/Mod3.1.stan") 
 
@@ -463,7 +461,7 @@ fit_mod3.1 <- stan("Models/Mod3.1.stan", data = stan_data_mod3.1,
 pars_mod3.1 <- c("B_0", "B_1", 
                  "var_ID_int1", "var_res1", "var_P1",
                  "var_ID_int2", "var_res2", "var_P2",
-                 "Omega_I", "S_I")
+                 "rho_I", "cov_I")
 
 # Look at the summary estimates
 round(rstan::summary(fit_mod3.1, pars = pars_mod3.1)$summary[,c(1,4,6,8,9,10)],3)

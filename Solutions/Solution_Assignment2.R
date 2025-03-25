@@ -74,14 +74,12 @@ write(
   real<lower=0> var_P = var_ID_int + var_ID_slopes + var_pop_int + var_pop_slopes + var_res;
   
   // Correlations & Covariances
-  matrix[2,2] Omega_I = L * L'; 
-  matrix[2,2] D_I = diag_matrix(sigma_I);
-  matrix[2,2] S_I = D_I*Omega_I*D_I; 
+  matrix[2,2] rho_I = L * L'; 
+  matrix[2,2] cov_I = diag_matrix(sigma_I)*rho_I*diag_matrix(sigma_I); 
   
   // For population level effects
-  matrix[2,2] Omega_pop = L_pop * L_pop'; // Correlation matrix
-  matrix[2,2] D_pop = diag_matrix(sigma_pop); // Diagonal SD matrix
-  matrix[2,2] S_pop = D_pop*Omega_pop*D_pop; // Covariance matrix
+  matrix[2,2] rho_pop = L_pop * L_pop'; // Correlation matrix
+  matrix[2,2] cov_pop = diag_matrix(sigma_pop)*rho_pop*diag_matrix(sigma_pop); // Covariance matrix
   }"
   , file = "Models/Mod2.3.stan") 
 
