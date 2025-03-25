@@ -27,7 +27,7 @@ write(
   transformed parameters {}
   model {}
   generated quantities {}"
-  , file = "Mod.stan") 
+  , file = "Models/Mod.stan") 
 # .stan is necessary to save it as a stan file!
 
 # Model 1 Linear regression 
@@ -71,10 +71,10 @@ write(
   B_1 ~ normal(0,1);
   sigma_e ~ exponential(3);
   }"
-  , file = "Mod1.1.stan") 
+  , file = "Models/Mod1.1.stan") 
 
 # Fit the model
-fit_mod1.1 <- stan("Mod1.1.stan", data = stan_data_mod1.1, 
+fit_mod1.1 <- stan("Models/Mod1.1.stan", data = stan_data_mod1.1, 
                    chains = 4, iter = 3000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
@@ -139,10 +139,10 @@ write(
   B_int ~ normal(0,1);
   sigma_e ~ exponential(3);
   }"
-  , file = "Mod1.3.stan") 
+  , file = "Models/Mod1.3.stan") 
 
 # Fit the model
-fit_mod1.3 <- stan("Mod1.3.stan", data = stan_data_mod1.3, 
+fit_mod1.3 <- stan("Models/Mod1.3.stan", data = stan_data_mod1.3, 
                    chains = 4, iter = 3000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
@@ -205,10 +205,10 @@ write(
   real<lower=0> var_res = sigma_e^2;
   real<lower=0> var_P = var_ID + var_res;
   }"
-  , file = "Mod2.1.stan") 
+  , file = "Models/Mod2.1.stan") 
 
 # Fit the model
-fit_mod2.1 <- stan("Mod2.1.stan", data = stan_data_mod2.1, 
+fit_mod2.1 <- stan("Models/Mod2.1.stan", data = stan_data_mod2.1, 
                    chains = 4, iter = 3000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
@@ -298,10 +298,10 @@ write(
   matrix[2,2] D_pop = diag_matrix(sigma_pop); // Diagonal SD matrix
   matrix[2,2] S_pop = D_pop*Omega_pop*D_pop; // Covariance matrix
   }"
-  , file = "Mod2.3.stan") 
+  , file = "Models/Mod2.3.stan") 
 
 # Fit the model
-fit_mod2.3 <- stan("Mod2.3.stan", data = stan_data_mod2.3, 
+fit_mod2.3 <- stan("Models/Mod2.3.stan", data = stan_data_mod2.3, 
                    chains = 4, iter = 3000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
@@ -389,10 +389,10 @@ write(
   matrix[2,2] D_I = diag_matrix(sigma_I); // Diagonal SD matrix
   matrix[2,2] S_I = D_I*Omega_I*D_I; // Covariance matrix
   }"
-  , file = "Mod3.1.stan") 
+  , file = "Models/Mod3.1.stan") 
 
 # Fit the model
-fit_mod3.1 <- stan("Mod3.1.stan", data = stan_data_mod3.1, 
+fit_mod3.1 <- stan("Models/Mod3.1.stan", data = stan_data_mod3.1, 
                    chains = 4, iter = 3000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
@@ -479,10 +479,10 @@ write(
   matrix[4,4] D_I = diag_matrix(sigma_I); // Diagonal SD matrix
   matrix[4,4] S_I = D_I*Omega_I*D_I; // Covariance matrix
   }"
-  , file = "Mod3.2.stan") 
+  , file = "Models/Mod3.2.stan") 
 
 # Fit the model
-fit_mod3.2 <- stan("Mod3.2.stan", data = stan_data_mod3.2, 
+fit_mod3.2 <- stan("Models/Mod3.2.stan", data = stan_data_mod3.2, 
                    chains = 4, iter = 4000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
@@ -563,10 +563,10 @@ write(
   real<lower=0> var_P = var_ID + var_res;
   real<lower=0> var_res_w = sigma_ew^2;
   }"
-  , file = "Mod4.1.stan") 
+  , file = "Models/Mod4.1.stan") 
 
 # Fit the model
-fit_mod4.1 <- stan("Mod4.1.stan", data = stan_data_mod4.1, 
+fit_mod4.1 <- stan("Models/Mod4.1.stan", data = stan_data_mod4.1, 
                    chains = 4, iter = 3000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
@@ -653,10 +653,10 @@ write(
   real<lower=0> var_res_w = sigma_ew^2;
   real<lower=0> var_P_w = var_ID_w + var_res_w;
   }"
-  , file = "Mod4.2.stan") 
+  , file = "Models/Mod4.2.stan") 
 
 # Fit the model
-fit_mod4.2 <- stan("Mod4.2.stan", data = stan_data_mod4.2, 
+fit_mod4.2 <- stan("Models/Mod4.2.stan", data = stan_data_mod4.2, 
                    chains = 4, iter = 4000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
@@ -748,10 +748,10 @@ write(
   matrix[2,2] D_I = diag_matrix(sigma_I); // Diagonal SD matrix
   matrix[2,2] S_I = D_I*Omega_I*D_I; // Covariance matrix
   }"
-  , file = "Mod4.3.stan") 
+  , file = "Models/Mod4.3.stan") 
 
 # Fit the model
-fit_mod4.3 <- stan("Mod4.3.stan", data = stan_data_mod4.3, 
+fit_mod4.3 <- stan("Models/Mod4.3.stan", data = stan_data_mod4.3, 
                    chains = 4, iter = 3000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,

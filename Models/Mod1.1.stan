@@ -11,12 +11,11 @@ data{
   real<lower=0> sigma_e;// Standard deviation of model likelihood
   }
   transformed parameters {
-  }
-  model {
-    vector[N_z] e_z; // Predicted values for phenotype
+  vector[N_z] e_z; // Predicted values for phenotype
   // model equation
   e_z = B_0 + B_1 * x;
-
+  }
+  model {
   // Likelihood function
   z ~ normal(e_z, sigma_e);
   // Priors
