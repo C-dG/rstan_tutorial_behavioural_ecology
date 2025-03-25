@@ -10,11 +10,11 @@ n.groups=10
 
 # Fixed effect
 mu1 <- 50
-mu2 <- 0
+mu2 <- 52
 
-beta1 <- 1.7
-beta2 <- 0.9
-beta3 <- -0.8
+beta1 <- 0.3
+beta2 <- 0.3
+beta3 <- -0.05
 
 # means
 M_I<-c(0,0,0,0)
@@ -51,10 +51,10 @@ I[3,4]<-I[4,3]<-C_int2_slope2
 
 
 ## Group varcov
-V_Gr_int1   <- 0.1    # variance direct effect (mean behaviour)
-V_Gr_slope1 <- 0.05
-V_Gr_int2   <- 0.1    # variance direct effect (mean behaviour)
-V_Gr_slope2 <- 0.05
+V_Gr_int1   <- 0.2    # variance direct effect (mean behaviour)
+V_Gr_slope1 <- 0.1
+V_Gr_int2   <- 0.2    # variance direct effect (mean behaviour)
+V_Gr_slope2 <- 0.1
 
 # covariances
 C_int1_slope1   <- 0.6*(sqrt(V_Gr_int1*V_Gr_slope1))         
@@ -78,16 +78,15 @@ GR[2,3]<-GR[3,2]<-C_int2_slope1
 GR[2,4]<-GR[4,2]<-C_slope1_slope2
 GR[3,4]<-GR[4,3]<-C_int2_slope2
 
-Ve1 = 0.7
-Ve2 = 0.3
 
-#Random effects ftness
+
+#Random effects fitness
 Vw_I = 0.5
 Vw_e = 0.4
 
 #Fixed effects on fitness
 mu=5
-betaw_int=1
+betaw_int=1.3
 betaw_int_q=-0.4
 
 betaw_slope=0.5
@@ -98,7 +97,6 @@ betaw_int_c=1
 betaw_partner=0.1
 betaw_partner_q=0
 betaw_partner_c=-1.1
-
 
 # study design ----
   IDi <- rep(1:n.ind, ind_rep)
@@ -129,9 +127,7 @@ betaw_partner_c=-1.1
   df$Gr_slope1=blups_Group[match(df$Population,blups_Group$Group),"slope1"]
   df$Gr_int2=blups_Group[match(df$Population,blups_Group$Group),"int1"]
   df$Gr_slope2=blups_Group[match(df$Population,blups_Group$Group),"slope2"]
-  
-  df$e1<-rnorm(nrow(df),0, sqrt(Ve1))
-  df$e2<-rnorm(nrow(df),0, sqrt(Ve2))
+
   
   W_blups_I <-as.data.frame(rnorm(n.ind,0, sqrt(Vw_I)))
   colnames(W_blups_I) <- "W_int"
@@ -147,23 +143,29 @@ betaw_partner_c=-1.1
  # Phenotype results from an individual's breeding value
  # and the population response psi to a known fixed phenotype (Xj) 
  # and the social breeding value of j
-  df$z1=mu1 + beta1*scale(df$x1)[,] + beta2*df$x2 + beta3*scale(df$x1)[,]*df$x2 + df$int1 + df$slope1*df$x1 + df$Gr_int1 + df$Gr_slope1*scale(df$x1)[,] + df$e1
-  df$z2=mu2 + beta1*scale(df$x1)[,] + beta2*df$x2 + beta3*scale(df$x1)[,] *df$x2 +  df$int2 + df$slope2*scale(df$x1)[,] + df$Gr_int2 + df$Gr_slope2*scale(df$x1)[,] + df$e2
+  df$z1= beta1*scale(df$x1)[,] + beta2*df$x2 + beta3*scale(df$x1)[,]*df$x1 + df$int1 + df$slope1*scale(df$x1)[,] + df$Gr_int1 + df$Gr_slope1*scale(df$x1)[,]
+  df$z1= df$z1 + rnorm(nrow(df),0, sqrt(1-var(df$z1))) 
+  df$z2= beta1*scale(df$x1)[,] + beta2*df$x2 + beta3*scale(df$x1)[,] *df$x2 +  df$int2 + df$slope2*scale(df$x1)[,] + df$Gr_int2 + df$Gr_slope2*scale(df$x1)[,] 
+  df$z2= df$z2 + rnorm(nrow(df),0, sqrt(1-var(df$z2))) 
   
-  df$w1=mu + betaw_int*df$int1 + betaw_int_q*df$int1*df$int1 + betaw_slope*df$slope1 + 
+  
+  
+  df$w1 = betaw_int*df$int1 + betaw_int_q*df$int1*df$int1 + betaw_slope*df$slope1 + 
         betaw_slope_q*df$slope1*df$slope1 + betaw_int_c*df$int1*df$slope1 +
         betaw_partner*df$int1_partner + betaw_partner_q*df$int1_partner +
         betaw_partner_c*df$int1*df$int1_partner
   
-  df$w2=mu + df$W_int + betaw_int*df$int1 + betaw_int_q*df$int1*df$int1 + betaw_slope*df$slope1 + 
+  df$w2 = df$W_int + betaw_int*df$int1 + betaw_int_q*df$int1*df$int1 + betaw_slope*df$slope1 + 
     betaw_slope_q*df$slope1*df$slope1 + betaw_int_c*df$int1*df$slope1 +
     betaw_partner*df$int1_partner + betaw_partner_q*df$int1_partner +
-    betaw_partner_c*df$int1*df$int1_partner + df$Vw_e
+    betaw_partner_c*df$int1*df$int1_partner
   
 ## Rename to suit behavioural ecology group
 data<-df[,c("IDi", "IDj", "Population", "x1", "x2", "z1", "z2", "w1","w2")]
 data$x2 <- ifelse(data$x2==0.5, "M", "F")
 colnames(data)<- c("Individual", "Partner", "Population", "Density", "Sex", "Exploration", "Aggression", "LRS", "Feeding_rate")
+data$Exploration <- (data$Exploration*12)+50
+data$Aggression <- (data$Aggression*1.2)+6
 data$Density <- round(data$Density, 1)
 data$Aggression_score <- rpois(1000, lambda = exp((data$Aggression - min(data$Aggression)) / 60))
 data$Population <- as.factor(data$Population)
@@ -182,9 +184,14 @@ summary_data <- data %>%
     Mean_Aggression = mean(Aggression, na.rm = TRUE),
     Mean_LRS = mean(LRS, na.rm = TRUE))
     
+library(ggplot2)
+ggplot(data, aes(x=Density, y=Exploration, colour=Population))+
+  geom_point() + geom_smooth(method="lm", se=F) +
+  theme_classic()
 
-ggplot(summary_data, aes(x=Mean_Aggression, y=Mean_Exploration))+
-  geom_point() +
+
+
+
   scale_x_continuous(name="Individual mean aggression") +
   scale_y_continuous(name="Individual mean exploration") +
   scale_color_discrete(guide="none") +
