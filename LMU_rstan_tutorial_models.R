@@ -575,7 +575,8 @@ round(rstan::summary(fit_mod4.2, pars = pars_mod4.2)$summary[,c(1,4,6,8,9,10)],3
 
 #===============================================================================
 # Model 4.3
-# Assignment 4: Add random slopes to model 4.1 and setup up direct, quadratic and correlation selection gradients for individual intercepts and slopes 
+# Assignment 4: Add individual random slopes to model 4.1 (not 4.2!)
+# Setup up direct, quadratic and correlation selection gradients for individual intercepts and slopes 
 #===============================================================================
 
 # Tip: you got this! Look closely how to model quadratic and correlational selection. What does it mean?

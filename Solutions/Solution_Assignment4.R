@@ -1,7 +1,8 @@
 #===============================================================================
 # Model 4.3
-# Assignment 4: Add random slopes to model 4.1 and setup up direct, quadratic and correlation selection gradients for individual intercepts and slopes 
-#===============================================================================
+# Assignment 4: Add individual random slopes to model 4.1 (not 4.2!)
+# Setup up direct, quadratic and correlation selection gradients for individual intercepts and slopes 
+#===============================================================================#===============================================================================
 
 # Prepare the data for the stan model
 stan_data_mod4.3 <- list(N_z = nrow(df),
