@@ -220,30 +220,24 @@ pars_mod2.1 <- c("B_0", "B_1", "var_ID", "var_res", "var_P")
 # Look at the summary estimates
 round(rstan::summary(fit_mod2.1, pars = pars_mod2.1)$summary[,c(1,4,6,8,9,10)],3)
 
-
-
 #===============================================================================
-# Model 2.3
-# Assignment 2: Add a random intercept & slope for population
+# Model 2.2
+# Add a random slope 
 #===============================================================================
 
 # Prepare the data for the stan model
-stan_data_mod2.3 <- list(N_z = nrow(df),
+stan_data_mod2.2 <- list(N_z = nrow(df),
                          z = as.vector(scale(df$Exploration)),
                          x = as.vector(scale(df$Density)),
                          N_I = length(unique(df$Individual)),
-                         ID = as.integer(as.factor(df$Individual)),
-                         N_pop = length(unique(df$Population)),
-                         pop = as.integer(as.factor(df$Population)))
+                         ID = as.integer(df$Individual))
 
 # Write the stan model
 write(
   temp <- "data{
   int<lower=1> N_z; // Total number of observations of phenotype (Z)
   int<lower=1> N_I; // Total number of unique individuals (I)
-  int<lower=1> N_pop; // Total number of unique populations (pop)
   int<lower=1> ID[N_z];  //  Individual ID repeated obs
-  int<lower=1> pop[N_z];  //  population repeated obs
   vector[N_z] z; // Phenotypic observations
   vector[N_z] x; // Environmental covariate
   }
@@ -255,17 +249,13 @@ write(
   matrix[N_I,2] zI; // intercepts & slopes for each individual
   vector<lower=0>[2] sigma_I; // sd individual intercepts & slopes
   cholesky_factor_corr[2] L; // Factor to estimate correlation int-slopes, is size n-trait
-  matrix[N_pop,2] zpop; // intercepts & slopes for each individual
-  vector<lower=0>[2] sigma_pop; // sd individual intercepts & slopes
-  cholesky_factor_corr[2] L_pop; // Factor to estimate correlation int-slopes, is size n-trait
   real<lower=0> sigma_e;// Standard deviation of model likelihood
   }
   transformed parameters {
   vector[N_z] e_z; // Predicted values for phenotype
-  matrix[N_I,2] I  = zI * diag_pre_multiply(sigma_I, L)'; // get the unscaled value
-  matrix[N_pop,2] P  = zpop * diag_pre_multiply(sigma_pop, L_pop)'; // get the unscaled value
+  matrix[N_I,2] I = zI * diag_pre_multiply(sigma_I, L)'; // get the unscaled value
   // model equation
-  e_z = B_0 + (B_1 + I[ID,2] + P[pop,2]) .* x + I[ID, 1] + P[pop,1];
+  e_z = B_0 + (B_1 + I[ID,2]) .* x + I[ID, 1];
   }
   model {
   // Likelihood function
@@ -276,32 +266,23 @@ write(
   to_vector(zI) ~ normal(0,1);
   sigma_I ~ exponential(3);
   L ~ lkj_corr_cholesky(3);
-  to_vector(zpop) ~ normal(0,1);
-  sigma_pop ~ exponential(3);
-  L_pop ~ lkj_corr_cholesky(3);
   sigma_e ~ exponential(3);
   }
   generated quantities{
   // Variance
   real<lower=0> var_ID_int = sigma_I[1]^2;
   real<lower=0> var_ID_slopes = sigma_I[2]^2;
-  real<lower=0> var_pop_int = sigma_pop[1]^2;
-  real<lower=0> var_pop_slopes = sigma_pop[2]^2;
   real<lower=0> var_res = sigma_e^2;
-  real<lower=0> var_P = var_ID_int + var_ID_slopes + var_pop_int + var_pop_slopes + var_res;
+  real<lower=0> var_P = var_ID_int + var_ID_slopes + var_res;
   // Correlations & Covariances
   matrix[2,2] Omega_I = L * L'; // Correlation matrix
   matrix[2,2] D_I = diag_matrix(sigma_I); // Diagonal SD matrix
   matrix[2,2] S_I = D_I*Omega_I*D_I; // Covariance matrix
-  // For population level effects
-  matrix[2,2] Omega_pop = L_pop * L_pop'; // Correlation matrix
-  matrix[2,2] D_pop = diag_matrix(sigma_pop); // Diagonal SD matrix
-  matrix[2,2] S_pop = D_pop*Omega_pop*D_pop; // Covariance matrix
   }"
-  , file = "Models/Mod2.3.stan") 
+  , file = "Mod2.2.stan") 
 
 # Fit the model
-fit_mod2.3 <- stan("Models/Mod2.3.stan", data = stan_data_mod2.3, 
+fit_mod2.2 <- stan("Mod2.2.stan", data = stan_data_mod2.2, 
                    chains = 4, iter = 3000,  
                    warmup = 1500, thin = 1, 
                    cores = 4,
@@ -309,14 +290,18 @@ fit_mod2.3 <- stan("Models/Mod2.3.stan", data = stan_data_mod2.3,
                    save_warmup = F)
 
 pars_mod2.2 <- c("B_0", "B_1", 
-                 "var_ID_int", "var_ID_slopes",
-                 "var_pop_int", "var_pop_slopes",
-                 "var_res", "var_P",
-                 "Omega_I", "S_I",
-                 "Omega_pop", "S_pop")
+                 "var_ID_int", "var_ID_slopes", "var_res", "var_P",
+                 "Omega_I", "S_I")
 
 # Look at the summary estimates
-round(rstan::summary(fit_mod2.3, pars = pars_mod2.2)$summary[,c(1,4,6,8,9,10)],3)
+round(rstan::summary(fit_mod2.2, pars = pars_mod2.2)$summary[,c(1,4,6,8,9,10)],3)
+
+#===============================================================================
+# Model 2.3
+# Assignment 2: Add a random intercept & slope for population
+#===============================================================================
+
+# Tip: see 2.1 and 2.2 
 
 # Model 3 Mulivariate linear mixed model 
 #===============================================================================
@@ -412,90 +397,8 @@ round(rstan::summary(fit_mod3.1, pars = pars_mod3.1)$summary[,c(1,4,6,8,9,10)],3
 # Assignment 3: Add random slopes for individuals and correlate them across traits
 #===============================================================================
 
-# Prepare the data for the stan model
-stan_data_mod3.2 <- list(N_z = nrow(df),
-                         zs = as.matrix(cbind(as.vector(scale(df$Exploration)),
-                                              as.vector(scale(df$Aggression)))),
-                         x = as.vector(scale(df$Density)),
-                         N_I = length(unique(df$Individual)),
-                         ID = as.integer(as.factor(df$Individual)))
-
-# Write the stan model
-write(
-  temp <- "data{
-  int<lower=1> N_z; // Total number of observations of phenotype (Z)
-  int<lower=1> N_I; // Total number of unique individuals (I)
-  int<lower=1> ID[N_z];  //  Individual ID repeated obs
-  array[N_z] vector[2] zs;  // phenotypic observations for phenotype 1 & 2
-  vector[N_z] x; // Environmental covariate
-  }
-  parameters {
-  // Fixed effects
-  vector[2] B_0; // Population intercept
-  vector[2] B_1; // Population slope for covariate x
-  // Random effects
-  matrix[N_I,4] zI; // intercepts & slopes for each individual
-  vector<lower=0>[4] sigma_I; // sd individual intercepts & slopes
-  cholesky_factor_corr[4] L; // Factor to estimate correlations
-  cholesky_factor_corr[2] LR; // Cholesky corr matrix for residuals
-  vector<lower=0>[2] sd_R; // temporary indvidual standard deviation (i.e. residual variance)
-  }
-  transformed parameters {
-  vector[N_z] e_z1; // Predicted values for phenotype
-  vector[N_z] e_z2; // Predicted values for phenotype
-  matrix[N_I,4] I  = zI * diag_pre_multiply(sigma_I, L)'; // get the unscaled value
-  // model equations
-  e_z1 = B_0[1] + (B_1[1] + I[ID, 1]) .* x + I[ID, 2];
-  e_z2 = B_0[2] + (B_1[2] + I[ID, 3]) .* x + I[ID, 4];
-  }
-  model {
-  // Transform expected values to array
-  array[N_z] vector[2] mus;
-  for (o in 1:N_z) 
-  mus[o] = [e_z1[o], e_z2[o]]';
-  matrix[2,2] L_sigma = diag_pre_multiply(sd_R, LR);
-  // Cholesky multinormal likelihood function to estimate residual correlations
-  zs ~ multi_normal_cholesky(mus, L_sigma);  
-  // Priors
-  B_0 ~ normal(0,1);
-  B_1 ~ normal(0,1);
-  to_vector(zI) ~ normal(0,1);
-  sigma_I ~ exponential(3);
-  L ~ lkj_corr_cholesky(3);
-  LR ~ lkj_corr_cholesky(3); //Prior residual correlation
-  }
-  generated quantities{
-  // Variance
-  real<lower=0> var_ID_int1 = sigma_I[1]^2;
-  real<lower=0> var_ID_slopes1 = sigma_I[2]^2;
-  real<lower=0> var_res1 = sd_R[1]^2;
-  real<lower=0> var_P1 = var_ID_int1 + var_ID_slopes1 + var_res1;
-  real<lower=0> var_ID_int2 = sigma_I[3]^2;
-  real<lower=0> var_ID_slopes2 = sigma_I[4]^2;
-  real<lower=0> var_res2 = sd_R[2]^2;
-  real<lower=0> var_P2 = var_ID_int2 + var_ID_slopes2 + var_res2;
-  // Correlations & Covariances
-  matrix[4,4] Omega_I = L * L'; // Correlation matrix
-  matrix[4,4] D_I = diag_matrix(sigma_I); // Diagonal SD matrix
-  matrix[4,4] S_I = D_I*Omega_I*D_I; // Covariance matrix
-  }"
-  , file = "Models/Mod3.2.stan") 
-
-# Fit the model
-fit_mod3.2 <- stan("Models/Mod3.2.stan", data = stan_data_mod3.2, 
-                   chains = 4, iter = 4000,  
-                   warmup = 1500, thin = 1, 
-                   cores = 4,
-                   refresh = 250,
-                   save_warmup = F)
-
-pars_mod3.2 <- c("B_0", "B_1", 
-                 "var_ID_int1", "var_ID_slopes1", "var_res1", "var_P1",
-                 "var_ID_int2", "var_ID_slopes2", "var_res2", "var_P2",
-                 "Omega_I", "S_I")
-
-# Look at the summary estimates
-round(rstan::summary(fit_mod3.2, pars = pars_mod3.2)$summary[,c(1,4,6,8,9,10)],3)
+# Tip: look at how the random intercepts for individuals are estimated and allowed to correlate. 
+# Do the same for the individual random slopes
 
 # Model 4 Error-in-variable (EIV) & selection gradient analysis 
 #===============================================================================
@@ -626,7 +529,7 @@ write(
   e_w = Bw_0 + Bw[1] * I[ID] +
                Bw[2] * I[partnerID] +
                Bw[3]*(I[ID].*I[ID]) + 
-               Bw[3]*(I[ID].*I[ID]) +
+               Bw[4]*(I[ID].*I[partnerID]) +
                WI[ID];
   }
   model {
@@ -675,95 +578,7 @@ round(rstan::summary(fit_mod4.2, pars = pars_mod4.2)$summary[,c(1,4,6,8,9,10)],3
 # Assignment 4: Add random slopes to model 4.1 and setup up direct, quadratic and correlation selection gradients for individual intercepts and slopes 
 #===============================================================================
 
-# Prepare the data for the stan model
-stan_data_mod4.3 <- list(N_z = nrow(df),
-                         z = as.vector(scale(df$Exploration)),
-                         x = as.vector(scale(df$Density)),
-                         N_I = length(unique(df$Individual)),
-                         ID = as.integer(as.factor(df$Individual)),
-                         w = as.vector(scale(unique(df$LRS))),
-                         N_w = length(unique(df$LRS)),
-                         ID_w = unique(as.integer(as.factor(df$Individual))))
-
-# Write the stan model
-write(
-  temp <- "data{
-  int<lower=1> N_z; // Total number of observations of phenotype (Z)
-  int<lower=1> N_I; // Total number of unique individuals (I)
-  int<lower=1> N_w; // Total number of fitness observations
-  int<lower=1> ID[N_z];  //  Individual ID repeated obs
-  int<lower=1> ID_w[N_w];  //  Individual ID repeated obs
-  vector[N_z] z; // Phenotypic observations
-  vector[N_z] x; // Environmental covariate
-  vector[N_w] w; // Fitness 
-  }
-  parameters {
-  // Fixed effects
-  real B_0; // Population intercept
-  real B_1; // covariate slope
-  real Bw_0; // Fitness intercept
-  vector[5] Bw; // Selection gradient slopes
-  // Random effects
-  matrix[N_I,2] zI; // intercepts & slopes for each individual
-  vector<lower=0>[2] sigma_I; // sd individual intercepts & slopes
-  cholesky_factor_corr[2] L; // Factor to estimate correlation int-slopes, is size n-trait  real<lower=0> sigma_e;// Standard deviation of model likelihood
-  real<lower=0> sigma_e;// Standard deviation of phenotypic model likelihood
-  real<lower=0> sigma_ew;// Standard deviation of fitness model likelihood
-  }
-  transformed parameters {
-  vector[N_z] e_z; // Predicted values for phenotype
-  vector[N_w] e_w; // Predicted values for fitness
-  matrix[N_I,2] I = zI * diag_pre_multiply(sigma_I, L)'; // get the unscaled value  // model equation 1 phenotypic model
-  e_z = B_0 + (B_1 + I[ID,2]) .* x + I[ID, 1];
-  // model equation 2 selection gradient
-  e_w = Bw_0 + Bw[1] * I[ID_w, 1] +
-               Bw[2] * I[ID_w, 2] +
-               Bw[2]*(I[ID_w, 1].*I[ID_w, 1]) +
-               Bw[2]*(I[ID_w, 2].*I[ID_w, 2]) +
-               Bw[2]*(I[ID_w, 1].*I[ID_w, 2]);
-  }
-  model {
-  // Likelihood functions
-  z ~ normal(e_z, sigma_e);
-  w ~ normal(e_w, sigma_ew);
-  // Priors
-  B_0 ~ normal(0,1);
-  B_1 ~ normal(0,1);
-  Bw_0 ~ normal(0,1);
-  Bw ~ normal(0,1);
-  to_vector(zI) ~ normal(0,1);
-  sigma_I ~ exponential(3);
-  L ~ lkj_corr_cholesky(3);  sigma_e ~ exponential(3);
-  sigma_ew ~ exponential(3);
-  }
-  generated quantities{
-  // Variance
-  real<lower=0> var_ID_int = sigma_I[1]^2;
-  real<lower=0> var_ID_slopes = sigma_I[2]^2;
-  real<lower=0> var_res = sigma_e^2;
-  real<lower=0> var_P = var_ID_int + var_ID_slopes + var_res;
-  real<lower=0> var_res_w = sigma_ew^2;
-  // Correlations & Covariances
-  matrix[2,2] Omega_I = L * L'; // Correlation matrix
-  matrix[2,2] D_I = diag_matrix(sigma_I); // Diagonal SD matrix
-  matrix[2,2] S_I = D_I*Omega_I*D_I; // Covariance matrix
-  }"
-  , file = "Models/Mod4.3.stan") 
-
-# Fit the model
-fit_mod4.3 <- stan("Models/Mod4.3.stan", data = stan_data_mod4.3, 
-                   chains = 4, iter = 3000,  
-                   warmup = 1500, thin = 1, 
-                   cores = 4,
-                   refresh = 250,
-                   save_warmup = F)
-
-pars_mod4.3 <- c("B_0", "Bw_0", "Bw",
-                 "var_ID_int", "var_ID_slopes", "var_res", "var_P", "var_res_w",
-                 "Omega_I", "S_I")
-
-# Look at the summary estimates
-round(rstan::summary(fit_mod4.3, pars = pars_mod4.3)$summary[,c(1,4,6,8,9,10)],3)
+# Tip: you got this! Look closely how to model quadratic and correlational selection. What does it mean?
 
 #===============================================================================
 # Bonus (assignments): working with shiny stan & posterior distribution 

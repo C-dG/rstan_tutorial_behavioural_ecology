@@ -30,7 +30,7 @@ data{
   e_w = Bw_0 + Bw[1] * I[ID] +
                Bw[2] * I[partnerID] +
                Bw[3]*(I[ID].*I[ID]) + 
-               Bw[3]*(I[ID].*I[ID]) +
+               Bw[4]*(I[ID].*I[partnerID]) +
                WI[ID];
   }
   model {
